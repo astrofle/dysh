@@ -1,15 +1,14 @@
+name: Publish Release to PyPi
+
 on:
   release:
-    types: 
-      - published
-
-name: release
-
+    types: [ published ]
+  workflow_dispatch:
 jobs:
   build:
     runs-on:  ${{ matrix.os }}
     environment: release
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -26,8 +25,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements-dev.txt
         pip install -e .
-    - hatch: Build with hatch
-        hatch build -c 
+    - name: Build with hatch
+      run: |
+        hatch build -c
 
   pypi-publish:
     name: upload release to PyPI
