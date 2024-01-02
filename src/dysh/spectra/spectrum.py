@@ -9,6 +9,20 @@ import numpy as np
 from . import baseline
 from ..plot import specplot as sp
 
+def qac_stats(data, label="-"):
+    """ QAC_STATS implementation for regression
+    """
+    mean = data.mean()
+    rms = data.std()
+    dmin = data.min()
+    dmax = data.max()
+    flux = 0
+    sump = data[data > 0.0].sum()
+    sumn = data[data < 0.0].sum()
+    sratio=(sump+sumn)/(sump-sumn)
+    npts = len(data)
+    print("QAC_STATS: %s %g %g %g %g  %g %g %d" % (label, mean, rms, dmin, dmax, flux, sratio, npts))
+
 class Spectrum(Spectrum1D):
     """
     This class contains a spectrum and its attributes. It is built on
@@ -136,6 +150,16 @@ class Spectrum(Spectrum1D):
     def plotter(self):
         return self._plotter
 
+    def qac_stats(self, label="-"):
+        """
+        Compute the QAC_STATS statistics of this `Spectrum`.  The mean, rms,
+        data minimum and data maximum, sum, sratio and number of points are
+        printed, and can be used for regression
+        """
+
+
+        qac_stats(self.data, label)
+        
     def stats(self):
         """
         Compute some statistics of this `Spectrum`.  The mean, rms,
