@@ -763,14 +763,22 @@ class GBTFITSLoad(SDFITSLoad):
         # warnings.warn("Didn't find any scans matching the input selection criteria.")
         return scanblock
 
-    def gettp(self, scan, sig=None, cal=None, bintable=None, **kwargs):
+    def gettp(
+        self,
+        sig=None,
+        cal=None,
+        calibrate=True,
+        timeaverage=True,
+        polaverage=False,
+        weights="tsys",
+        bintable=None,
+        **kwargs,
+    ):
         """
         Get a total power scan, optionally calibrating it.
 
         Parameters
         ----------
-        scan: int
-            scan number
         sig : bool or None
             True to use only integrations where signal state is True, False to use reference state (signal state is False). None to use all integrations.
         cal: bool or None
@@ -779,10 +787,17 @@ class GBTFITSLoad(SDFITSLoad):
             the index for BINTABLE in `sdfits` containing the scans
         calibrate: bool
             whether or not to calibrate the data.  If `True`, the data will be (calon - caloff)*0.5, otherwise it will be SDFITS row data. Default:True
-        weights: str
-            'equal' or 'tsys' to indicate equal weighting or tsys weighting to use in time averaging. Default: 'tsys'
+        timeaverage : boolean, optional
+            Average the scans in time. The default is True.
+        polaverage : boolean, optional
+            Average the scans in polarization. The default is False.
+        weights: str or None
+            None or 'tsys' to indicate equal weighting or tsys weighting to use in time averaging. Default: 'tsys'
+        **kwargs : dict
+            Optional additional selection (only?) keyword arguments, typically
+            given as key=value, though a dictionary works too.
+            e.g., `ifnum=1, plnum=[2,3]` etc.
 
-        scan args - ifnum, plnum, fdnum, subref
 
         Returns
         -------
@@ -790,26 +805,46 @@ class GBTFITSLoad(SDFITSLoad):
             A ScanBlock containing one or more `~spectra.scan.TPScan`
 
         """
-        kwargs_opts = {
-            "ifnum": 0,
-            "plnum": 0,
-            "fdnum": None,
-            "subref": None,  # subreflector position
-            "timeaverage": True,
-            "polaverage": True,
-            "weights": "tsys",  # or 'tsys' or ndarray
-            "calibrate": True,
-            "debug": False,
-        }
-        kwargs_opts.update(kwargs)
+        # kwargs_opts = {
+        #    "ifnum": 0,
+        #   "plnum": 0,
+        #   "fdnum": None,
+        #   "subref": None,  # subreflector position
+        #   "timeaverage": True,
+        #   "polaverage": True,
+        #    "weights": "tsys",  # or 'tsys' or ndarray
+        #    "calibrate": True,
+        #    "debug": False,
+        # }
+        # kwargs_opts.update(kwargs)
         TF = {True: "T", False: "F"}
         sigstate = {True: "SIG", False: "REF", None: "BOTH"}
         calstate = {True: "ON", False: "OFF", None: "BOTH"}
+        _final = self._selection.final
+        # print(kwargs)
+        scans = kwargs.pop("scan", None)
+        debug = kwargs.pop("debug", False)
+        kwargs = keycase(kwargs)
+        if type(scans) is int:
+            scans = [scans]
+        preselected = {}
+        for kw in ["SCAN", "IFNUM", "PLNUM"]:
+            preselected[kw] = uniq(_final[kw])
+        if scans is None:
+            scans = preselected["SCAN"]
 
-        ifnum = kwargs_opts["ifnum"]
-        plnum = kwargs_opts["plnum"]
-        fdnum = kwargs_opts["fdnum"]
-        subref = kwargs_opts["subref"]
+        # ifnum = kwargs_opts["ifnum"]
+        # plnum = kwargs_opts["plnum"]
+        # fdnum = kwargs_opts["fdnum"]
+        # subref = kwargs_opts["subref"]
+        ps_selection = copy.deepcopy(self._selection)
+        for k, v in preselected.items():
+            if k not in kwargs:
+                kwargs[k] = v
+        # now downselect with any additional kwargs
+        ps_selection._select_from_mixed_kwargs(**kwargs)
+        _sf = ps_selection.final
+
         scanblock = ScanBlock()
         for i in range(len(self._sdf)):
             df = self._sdf[i]._index
