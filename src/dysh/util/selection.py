@@ -27,6 +27,7 @@ default_aliases = {
     #   "scans": "scan",  # backward compatibility with calibration routine old arguments
     "source": "object",
     "pol": "plnum",
+    "subref": "subref_state",
 }
 
 
