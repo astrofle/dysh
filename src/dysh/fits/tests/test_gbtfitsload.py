@@ -23,7 +23,7 @@ class TestGBTFITSLoad:
 
     def test_load(self):
         """
-        Test loading 8 different sdfits files.
+        Test loading 14 different sdfits files.
         Check: number of pandas rows loaded is equal to the expected number.
         """
         expected = {
@@ -49,6 +49,8 @@ class TestGBTFITSLoad:
             filename = os.path.basename(fnm)
             sdf = gbtfitsload.GBTFITSLoad(fnm)
             assert len(sdf.index(bintable=0)) == expected[filename]
+        #sdf = gbtfitsload.GBTFITSLoad()
+  
 
     def test_getspec(self):
         """
@@ -234,7 +236,9 @@ class TestGBTFITSLoad:
 
     def test_summary(self):
         """Test that some of the columns in the summary
-        match the ones produced by `GBTIDL`."""
+        match the ones produced by `GBTIDL`. Also check 
+        that the scans subselection works and some columns 
+        in the verbose version match."""
 
         def read_gbtidl_summary(filename, idx=1):
             """ """
@@ -278,3 +282,42 @@ class TestGBTFITSLoad:
                 check_names=False,
                 check_index=False,
             )
+
+        #check subset of scans can be selected
+        assert sdf.summary(scans=(53,57)).shape == (5,13)
+        assert sdf.summary(scans=54).shape == (1,13)
+
+        #check verbose summary too
+        path = util.get_project_testdata() / "TGBT21A_501_11"
+        sdf_file = path / "TGBT21A_501_11.raw.vegas.fits"
+        sdf = gbtfitsload.GBTFITSLoad(sdf_file)
+        dysh_df = sdf.summary(verbose=True)
+
+        gbtidl_summary = read_gbtidl_summary(path / "TGBT21A_501_11.raw.vegas.summary")
+
+        #check size
+        assert (dysh_df).shape == (4,17)
+        cols = ['DOPFREQ', 'CAL','DATE-OBS']
+        #check a few columns
+        for col in cols:
+            assert_series_equal(
+                dysh_df[col],  # .sort_values(),
+                gbtidl_summary[col],  # .sort_values(),
+                check_dtype=False,
+                check_names=False,
+                check_index=False,
+            )
+
+    def test_velocity(self):
+        """Test that we call velocity_convention and velocity_frame
+        correctly. These are already well tested in test_coordinates_core.py
+        but are repeated here for sake of coverage."""
+
+        path = util.get_project_testdata() / "AGBT05B_047_01"
+        sdf_file = path / "AGBT05B_047_01.raw.acs"
+        sdf = gbtfitsload.GBTFITSLoad(sdf_file)
+
+        assert sdf.velocity_convention('OPTI-HEL') == 'optical'
+        assert sdf.velocity_frame('OPTI-HEL') == 'heliocentric'
+
+
