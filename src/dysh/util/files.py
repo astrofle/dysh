@@ -21,120 +21,214 @@ from ..util import minimum_string_match
 import dysh.util as util
 
 _debug = False
+#_debug = True
+
+# fmt:off
 
 # $DYSH/testdata 
-valid_dysh_tests = {
+valid_dysh_test = {
     "getps" : "TGBT21A_501_11/TGBT21A_501_11.raw.vegas.fits",
     "getfs" : "TGBT21A_504_01/TGBT21A_504_01.raw.vegas/TGBT21A_504_01.raw.vegas.A.fits",
+    "test1" : "AGBT05B_047_01/AGBT05B_047_01.raw.acs/",   # same as example='test1'
 }
 
 
-# http://www.gb.nrao.edu/dysh/example_data or /home/dysh/example_data
-valid_dysh_examples = {
+# http://www.gb.nrao.edu/dysh/example_data or /home/dysh/example_data or $DYSH_DATA/example_data
+valid_dysh_example = {
     "getps"      : "onoff-L/data/TGBT21A_501_11.raw.vegas.fits",
+                   #    positionswitch/data/AGBT05B_047_01/AGBT05B_047_01.raw.acs/"
     "getfs"      : "fs-L/data/AGBT20B_014_03.raw.vegas/AGBT20B_014_03.raw.vegas.A.fits",
+                   #    frequencyswitch/data/TREG_050627/TREG_050627.raw.acs/"    # staff training FS
     "subbeamnod" : "subbeamnod-Ka/data/TRCO_230413_Ka.raw.vegas/TRCO_230413_Ka.raw.vegas.A.fits",
+                   #    subbeamnod/data/AGBT13A_124_06/AGBT13A_124_06.raw.acs/"   # staff training SBN
+    "test1"      : "positionswitch/data/AGBT05B_047_01/AGBT05B_047_01.raw.acs/AGBT05B_047_01.raw.acs.fits",   # staff training PS      same as test='test1'
 }
 
 
-def dysh_data(test=None,
-              example=None,
-              sdfits=None,
-              url="http://www.gb.nrao.edu/dysh/",
-              dysh_data = None):
-    r"""
-    Simple access to GBO data.  @todo configuration discussion
+# /home/dysh/acceptance_testing or $DYSH_DATA/acceptance_testing
+# in acceptance_testing/data
+# AGBT05B_047_01  AGBT15B_244_07  AGBT18A_503_02  AGBT19A_473_41  TGBT18A_500_06
+# AGBT13A_240_03  AGBT16B_392_01  AGBT18B_014_02  AGBT19B_096_08  TGBT21A_501_10
+# AGBT14B_480_06  AGBT17B_004_14  AGBT18B_354_03  AGBT20B_336_01  TREG_050627
+# AGBT15B_228_08  AGBT17B_319_06  AGBT19A_080_01  AGBT22A_325_15  TSCAL_19Nov2015
+valid_dysh_accept = {
+    "TBD"       : "not yet implemented",
+}
 
-    Users that are not on the GBO system and need access to example_data could
-    rsync the /home/dysh/example_data tree to avoid repeated wgets on repeated
-    repos.  For example inside their $HOME/dysh_data/ one would then set
+# fmt: on
+
+def dysh_data(sdfits=None,
+              test=None,
+              example=None,
+              accept=None,
+              dysh_data=None,        
+              verbose=False):
+    r"""
+    Simplified access to GBO data without an absolute path.  @todo pending configuration discussion
+
+    Users or Developers that are not on the GBO system and need access to data could
+    rsync various  data trees to avoid repeated downloads.
+    
+    For example inside their $HOME/dysh_data/ one would then set
              export DYSH_DATA=$HOME/dysh_data
 
-    Locations of various dysh_data directory roots:
+    Locations of various dysh_data directory roots:  ($DYSH is the repo root for developers)
     -----------------------------------------------
-    keyword       location                       method                           $DYSH_DATA root    
+    keyword       location                       method                           $DYSH_DATA root
+    -------       --------                       ------                           ---------------
+    sdfits:       /home/sdfits                   -                                $DYSH_DATA/sdfits
     test:         $DYSH/testdata                 util.get_project_testdata()      $DYSH_DATA/testdata
-    example:      /home/dysh/example_data                                         $DYSH_DATA/example_data
-    sdfits:       /home/sdfits                                                    $DYSH_DATA/sdfits
+    example:      /home/dysh/example_data        -                                $DYSH_DATA/example_data
+    accept:       /home/dysh/acceptance_testing  -                                $DYSH_DATA/acceptance_testing
 
 
     Examples of use:
     ----------------
     fn = dysh_data(test='getps')
     fn = dysh_data(example='getfs')
-    fn = dysh_data(sdfits='AGBT21B_024_54')         ->  /home/sdfits/AGBT21B_024_54
-                                               or:  -   /lma1/teuben/GBT-EDGE/rawdata/AGBT21B_024_54
+    fn = dysh_data('AGBT21B_024_54')         ->  /home/sdfits/AGBT21B_024_54
+                                        or:  -   /lma1/teuben/GBT-EDGE/rawdata/AGBT21B_024_54
 
 
-    Older Notes:
+    Notes:
 
-    0) if a local file AGBT20B_014_03.raw.vegas.A.fits already exist, 
-       use it (thus supporting the old style)
     1) if $DYSH_DATA exist (and this is a new proposal), it will prepend 
        that to the argument of get_dysh_data() and check for existence
     2) if /home/dysh exists, it will prepend this and check for existence
-       this will keep GBO people happy
+       this will keep GBO people happy.  Offsite a symlink should also work.
     3) if none of those gave a valid name, it will fall back to making a URL 
        by prepending http://www.gb.nrao.edu/dysh/ and using
-       wget for as long we want to support that. 
+       wget for as long we want to support that.
+       astropy caching is also an option
+
+    4) directories (names not ending on .fits ?)  cannot be downloaded
+
     """
+    # fmt:off    
+    _url                = "http://www.gb.nrao.edu/dysh/"            # base of all things dysh
+    _example_data       = "/home/dysh/public_html/example_data"     # GBO direct access
+    _test_data          = "/home/dysh/public_html/test_data"        # not used ??
+    _acceptance_testing = "/home/dysh/acceptance_testing"           # not in public_html ??
+    # fmt:on
+
+    # 1.  find out if there is a dysh_data (or use $DYSH_DATA, or a .dyshrc config?)
+    
+    global _debug
     if dysh_data == None and 'DYSH_DATA' in os.environ:
         dysh_data = os.environ['DYSH_DATA']
+    if verbose:
+        _debug = True
     if _debug:
         print("DYSH_DATA:", dysh_data)
 
-    if test != None:
-        my_test = minimum_string_match(test, list(valid_dysh_tests.keys()))
-        fn = valid_dysh_tests[my_test]
+
+    # 2. Process whichever one of 'sdfits=', 'test=', 'example=', and  'accept=' is present
+
+
+    # sdfits:   the main place where GBO data reside
+    
+    if sdfits != None:
+        if sdfits == '?':
+            if dysh_data == None:
+                dd = '/home/sdfits'
+            else:
+                dd = dysh_data + '/sdfits/'
+            cmd = 'ls %s' % dd
+            print("# dysh_data::sdfits")
+            print('# contents of',dd)
+            print("# -----------------")            
+            os.system(cmd)
+            return None
         if dysh_data != None:
-            fn = dysh_data + '/testdata/' + fn
-            if _debug:
-                print("final-1:",fn)
-            if os.path.exists(fn):    # @todo this catches files and directories
+            fn = dysh_data + '/sdfits/' + sdfits
+            if os.path.exists(fn):
                 return fn
-            # weird, typo is need to check the code tree
-        fn = util.get_project_testdata() / fn
+        fn = '/home/sdfits/' + sdfits
+        if os.path.exists(fn):
+            return fn
+        print(f"could not handle sdfits={sdfits} yet")
+        return None
+    
+
+    # test:   this should also be allowed to use util.get_project_testdata() as well
+
+    if test != None:
+        if test == '?':
+            print("# dysh_data::test")
+            print("# ---------------")
+            for k in valid_dysh_test.keys():
+                print(k, valid_dysh_test[k])
+            return None
+        my_test = minimum_string_match(test, list(valid_dysh_test.keys()))
+        if my_test != None:
+            my_test = valid_dysh_test[my_test]
+        else:
+            my_test = test
+        #
+        if dysh_data != None:
+            fn = dysh_data + '/testdata/' + my_test
+            if not os.path.exists(fn):
+                fn = util.get_project_testdata() / my_test                
+        else:
+            fn = util.get_project_testdata() / my_test
         if _debug:
-            print('final-2:',fn)
+            print('final:',fn)
         if os.path.exists(fn):    # @todo this catches files and directories        
             return fn
-        print("Could not find file",fn)
+        print("Could not find",fn)
         return None
-        
+
+    # example:  these can also obtain data via wget (or perhaps astropy caching???)
 
     if example != None:
-        my_example = minimum_string_match(example, list(valid_dysh_examples.keys()))
-        fn = valid_dysh_examples[my_example]
-        if _debug:
-            print('example:',fn)
+        if example == '?':
+            print("# dysh_data::example")
+            print("# ------------------")            
+            for k in valid_dysh_example.keys():
+                print(k, valid_dysh_example[k])
+            return None
+        my_example = minimum_string_match(example, list(valid_dysh_example.keys()))
+        if my_example != None:
+            my_example = valid_dysh_example[my_example]
+        else:
+            my_example = example
         if dysh_data != None:
-            fn1 = dysh_data + '/example_data/' + fn
-            if _debug:
-                print("final-1",fn1)
-            if os.path.exists(fn1):    # @todo this catches files and directories
-                return fn1
-            # weird, typo is need to check the code tree
-        url = url + '/example_data/' + fn
+            fn = dysh_data + '/example_data/' + my_example
+            if os.path.exists(fn): 
+                return fn
+            print("Odd-1, did not find",fn)
+        if dysh_data == None and os.path.exists(_example_data):
+            fn = _example_data + '/' + my_example
+            if os.path.exists(fn):
+                return fn
+            print("Odd-2, did not find",fn)
+        # last resort, try getting it via wget, but it will then be a local file in the current directory
+        url = _url + '/example_data/' + my_example
         if _debug:
             print("url:",url)
         filename = url.split('/')[-1]
         if not os.path.exists(filename):    
-            print(f"Downloading {filename}")
+            print(f"Downloading {filename} from {url}")
             wget.download(url,out=filename)
             print(f"\nRetrieved {filename}")
         else:
             print(f"{filename} already downloaded")
         return filename
 
+    # accept:   not used yet
 
-    if sdfits != None:
-        if dysh_data != None:
-            fn = dysh_data + '/sdfits/' + sdfits
-            if os.path.exists(fn):
-                return fn
-        print(f"could not handle sdfits={sdfits} yet")
+    if accept != None:
+        if accept == '?':
+            print("# dysh_data::accept")
+            print("# -----------------")            
+            for k in valid_dysh_accept.keys():
+                print(k, valid_dysh_accept[k])
+            return None
+        print("accept=%s not supported yet" % accept)
+        return None
 
-    print("You have not given one of:   test=, example=, sdfits=")
+    print("You have not given one of:   sdfits=, test=, example=, accept=")
+    print("or use =? as argument to get a list of valid shortcuts")
     return None
 
 # def find_data_recursively(filename, path=None, recursive=False, wildcard=False, maxfiles=None):
