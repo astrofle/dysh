@@ -87,7 +87,7 @@ def dysh_data(sdfits=None,
     fn = dysh_data(test='getps')
     fn = dysh_data(example='getfs')
     fn = dysh_data('AGBT21B_024_54')         ->  /home/sdfits/AGBT21B_024_54
-                                        or:  -   /lma1/teuben/GBT-EDGE/rawdata/AGBT21B_024_54
+                                        or:  -   /lma1/teuben/GBT-EDGE/rawdata/AGBT21B_024_54 with $DYSH_DATA
 
 
     Notes:
