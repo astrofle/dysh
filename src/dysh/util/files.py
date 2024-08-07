@@ -23,6 +23,8 @@ import dysh.util as util
 _debug = False
 #_debug = True
 
+# note the examples in https://gbtdocs.readthedocs.io/en/latest/how-tos/data_reduction/gbtidl.html
+
 # fmt:off
 
 # $DYSH/testdata 
@@ -42,6 +44,8 @@ valid_dysh_example = {
     "subbeamnod" : "subbeamnod-Ka/data/TRCO_230413_Ka.raw.vegas/TRCO_230413_Ka.raw.vegas.A.fits",
                    #    subbeamnod/data/AGBT13A_124_06/AGBT13A_124_06.raw.acs/"   # staff training SBN
     "test1"      : "positionswitch/data/AGBT05B_047_01/AGBT05B_047_01.raw.acs/AGBT05B_047_01.raw.acs.fits",   # staff training PS      same as test='test1'
+    "nod"        : "nod-KFPA/data/TGBT22A_503_02.raw.vegas",    # nodding example (scan 62,63)
+                   #              TGBT22A_503_02.raw.vegas      # FS example in data_reduction (scan 64)
 }
 
 
