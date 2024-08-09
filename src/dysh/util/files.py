@@ -16,9 +16,15 @@
 import os
 import sys
 import glob
-import wget     # might get deprecated
+try:
+    from dysh.util.download import from_url
+    use_wget = False
+except:
+    import wget     # might get deprecated
+    use_wget = True
 from ..util import minimum_string_match
 import dysh.util as util
+
 
 _debug = False
 #_debug = True
@@ -213,7 +219,10 @@ def dysh_data(sdfits=None,
         filename = url.split('/')[-1]
         if not os.path.exists(filename):    
             print(f"Downloading {filename} from {url}")
-            wget.download(url,out=filename)
+            if use_wget:
+                wget.download(url,out=filename)
+            else:
+                filename = from_url(url)
             print(f"\nRetrieved {filename}")
         else:
             print(f"{filename} already downloaded")
