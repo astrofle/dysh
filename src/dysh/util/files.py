@@ -8,14 +8,12 @@
 #
 #      fdr [-r] [-m MAXFILES] file [path1 path2 ...]
 #
-#  Shell alternative:
-#
-#  find . -name \*$a\* -print
 
 
 import os
 import sys
 import glob
+from pathlib import Path
 try:
     from dysh.util.download import from_url
     use_wget = False
@@ -26,10 +24,13 @@ from ..util import minimum_string_match
 import dysh.util as util
 
 
+
 _debug = False
 #_debug = True
 
 # note the examples in https://gbtdocs.readthedocs.io/en/latest/how-tos/data_reduction/gbtidl.html
+# @todo   convert everything to use Path()
+#         Path() cannot be used on input.... input needs to be a string
 
 # fmt:off
 
@@ -74,12 +75,12 @@ def dysh_data(sdfits=None,
               dysh_data=None,        
               verbose=False):
     r"""
-    Simplified access to GBO data without an absolute path.  @todo pending configuration discussion
+    Simplified access to GBO data without needing an absolute path.  @todo pending configuration discussion
 
-    Users or Developers that are not on the GBO system and need access to data could
-    rsync various  data trees to avoid repeated downloads.
+    By default it will detect the GBO system, users or developers that are not on the GBO system and need
+    access to data could rsync various data trees to avoid repeated downloads.
     
-    For example inside their $HOME/dysh_data/ one would then set
+    For example inside their $HOME/dysh_data/ one could set
              export DYSH_DATA=$HOME/dysh_data
 
     Locations of various dysh_data directory roots:  ($DYSH is the repo root for developers)
@@ -96,6 +97,7 @@ def dysh_data(sdfits=None,
     ----------------
     fn = dysh_data(test='getps')
     fn = dysh_data(example='getfs')
+    fn = dysh_data(example='onoff-L/data/TGBT21A_501_11.raw.vegas')
     fn = dysh_data('AGBT21B_024_54')         ->  /home/sdfits/AGBT21B_024_54
                                         or:  -   /lma1/teuben/GBT-EDGE/rawdata/AGBT21B_024_54 with $DYSH_DATA
 
@@ -125,11 +127,12 @@ def dysh_data(sdfits=None,
     
     global _debug
     if dysh_data == None and 'DYSH_DATA' in os.environ:
-        dysh_data = os.environ['DYSH_DATA']
+        dysh_data = Path(os.environ['DYSH_DATA'])
     if verbose:
         _debug = True
     if _debug:
         print("DYSH_DATA:", dysh_data)
+        print("USE_WGET: ", use_wget)
 
 
     # 2. Process whichever one of 'sdfits=', 'test=', 'example=', and  'accept=' is present
@@ -140,21 +143,23 @@ def dysh_data(sdfits=None,
     if sdfits != None:
         if sdfits == '?':
             if dysh_data == None:
-                dd = '/home/sdfits'
+                dd = Path('/home/sdfits')
             else:
-                dd = dysh_data + '/sdfits/'
+                dd = dysh_data / 'sdfits'
+            # @todo figure out listing of file OS agnostic
             cmd = 'ls %s' % dd
             print("# dysh_data::sdfits")
             print('# contents of',dd)
             print("# -----------------")            
             os.system(cmd)
             return None
+        print(type(dysh_data))
         if dysh_data != None:
-            fn = dysh_data + '/sdfits/' + sdfits
-            if os.path.exists(fn):
+            fn = dysh_data / Path('sdfits') / sdfits
+            if fn.exists():
                 return fn
-        fn = '/home/sdfits/' + sdfits
-        if os.path.exists(fn):
+        fn = Path('/home/sdfits/') / sdfits
+        if fn.exists():
             return fn
         print(f"could not handle sdfits={sdfits} yet")
         return None
@@ -176,14 +181,14 @@ def dysh_data(sdfits=None,
             my_test = test
         #
         if dysh_data != None:
-            fn = dysh_data + '/testdata/' + my_test
-            if not os.path.exists(fn):
+            fn = dysh_data / 'testdata' / my_test
+            if not fn.exists():
                 fn = util.get_project_testdata() / my_test                
         else:
             fn = util.get_project_testdata() / my_test
         if _debug:
             print('final:',fn)
-        if os.path.exists(fn):    # @todo this catches files and directories        
+        if fn.exists():    # @todo this catches files and directories        
             return fn
         print("Could not find",fn)
         return None
@@ -203,21 +208,22 @@ def dysh_data(sdfits=None,
         else:
             my_example = example
         if dysh_data != None:
-            fn = dysh_data + '/example_data/' + my_example
-            if os.path.exists(fn): 
+            fn = dysh_data / 'example_data' / my_example
+            if fn.exists(): 
                 return fn
             print("Odd-1, did not find",fn)
         if dysh_data == None and os.path.exists(_example_data):
-            fn = _example_data + '/' + my_example
-            if os.path.exists(fn):
+            fn = Path(_example_data) / my_example
+            if fn.exists():
                 return fn
             print("Odd-2, did not find",fn)
         # last resort, try getting it via wget, but it will then be a local file in the current directory
         url = _url + '/example_data/' + my_example
         if _debug:
             print("url:",url)
-        filename = url.split('/')[-1]
+        # @todo  how to use Path() here ????
         if not os.path.exists(filename):    
+            filename = url.split('/')[-1]
             print(f"Downloading {filename} from {url}")
             if use_wget:
                 wget.download(url,out=filename)
