@@ -120,7 +120,7 @@ def dysh_data(sdfits=None,
     _url                = "http://www.gb.nrao.edu/dysh/"            # base of all things dysh
     _example_data       = "/home/dysh/public_html/example_data"     # GBO direct access
     _test_data          = "/home/dysh/public_html/test_data"        # not used ??
-    _acceptance_testing = "/home/dysh/acceptance_testing"           # not in public_html ??
+    _acceptance_testing = "/home/dysh/acceptance_testing/data"      # not in public_html ??
     # fmt:on
 
     # 1.  find out if there is a dysh_data (or use $DYSH_DATA, or a .dyshrc config?)
