@@ -63,7 +63,8 @@ valid_dysh_example = {
 # AGBT14B_480_06  AGBT17B_004_14  AGBT18B_354_03  AGBT20B_336_01  TREG_050627
 # AGBT15B_228_08  AGBT17B_319_06  AGBT19A_080_01  AGBT22A_325_15  TSCAL_19Nov2015
 valid_dysh_accept = {
-    "TBD"       : "not yet implemented",
+    "nod1"       : "AGBT22A_325_15/AGBT22A_325_15.raw.vegas/",
+    "nod2"       : "TREG_050627/TREG_050627.raw.acs/TREG_050627.raw.acs.fits",
 }
 
 # fmt: on
@@ -234,7 +235,7 @@ def dysh_data(sdfits=None,
             print(f"{filename} already downloaded")
         return filename
 
-    # accept:   not used yet
+    # accept:   acceptance_testing/data - wget not recommended (does not work on multifile fits)
 
     if accept != None:
         if accept == '?':
@@ -243,8 +244,38 @@ def dysh_data(sdfits=None,
             for k in valid_dysh_accept.keys():
                 print(k, valid_dysh_accept[k])
             return None
-        print("accept=%s not supported yet" % accept)
-        return None
+        my_accept = minimum_string_match(accept, list(valid_dysh_accept.keys()))
+        if my_accept != None:
+            my_accept = valid_dysh_accept[my_accept]
+        else:
+            my_accept = accept
+        if dysh_data != None:
+            fn = dysh_data / 'acceptance_testing/data' / my_accept
+            if fn.exists(): 
+                return fn
+            print("Odd-1, did not find",fn)
+        if dysh_data == None and os.path.exists(_accept_data):
+            fn = Path(_accept_data) / my_accept
+            if fn.exists():
+                return fn
+            print("Odd-2, did not find",fn)
+        # last resort, try getting it via wget, but it will then be a local file in the current directory
+        url = _url + '/acceptance_testing/data/' + my_accept
+        if _debug:
+            print("url:",url)
+        # @todo  how to use Path() here ????
+        if not os.path.exists(filename):    
+            filename = url.split('/')[-1]
+            print(f"Downloading {filename} from {url}")
+            if use_wget:
+                wget.download(url,out=filename)
+            else:
+                filename = from_url(url)
+            print(f"\nRetrieved {filename}")
+        else:
+            print(f"{filename} already downloaded")
+        return filename
+
 
     print("You have not given one of:   sdfits=, test=, example=, accept=")
     print("or use =? as argument to get a list of valid shortcuts")
