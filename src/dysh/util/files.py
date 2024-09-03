@@ -115,6 +115,8 @@ def dysh_data(sdfits=None,
        astropy caching is also an option
 
     4) directories (names not ending on .fits ?)  cannot be downloaded
+    5) use python-dotenv for configuration
+       key=val
 
     """
     # fmt:off    
@@ -125,6 +127,13 @@ def dysh_data(sdfits=None,
     # fmt:on
 
     # 1.  find out if there is a dysh_data (or use $DYSH_DATA, or a .dyshrc config?)
+    #     - if present, API dysh_data is used
+    #     - if present, $DYSH_DATA is used
+    #     - if present, python_env is used
+    #     - if all of this fails, assume we're at GBO (all via /home/dysh)
+    #     - if that still fails, look at current working directory
+    #     - throw!?
+    #     ? e.g. dysh_data('foo.fits') ->   sdfits='foo.fits'
     
     global _debug
     if dysh_data == None and 'DYSH_DATA' in os.environ:
