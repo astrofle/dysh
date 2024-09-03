@@ -164,12 +164,14 @@ class GBTFITSLoad(SDFITSLoad):
         Parameters
         ----------
         hdu : int or list
-            Header Data Unit to select from the index. Default: all HDUs
+            Header Data Unit to select from the index.
+            Default: all HDUs
         bintable :  int
-            The index of the `bintable` attribute, None means all bintables
+            The index of the `bintable` attribute.
+            Default: None, meaning all bintables
         fitsindex: int
             The index of the FITS file contained in this GBTFITSLoad.
-            Default:None meaning return one index over all files.
+            Default: None, meaning return one index over all files.
 
         Returns
         -------
@@ -268,16 +270,25 @@ class GBTFITSLoad(SDFITSLoad):
         If `verbose=False` (default), some numeric data
         (e.g., RESTFREQ, AZIMUTH, ELEVATIO) are
         averaged over the records with the same scan number.
+        
+        If `verbose=True` the default printing style of a panda's DataFrame might
+        now show all records.  In that case one can either do:
+            print(sdf.summary(verbose=True).to_string())
+        or
+            pd.set_option('display.max_rows', None)
+            sdf.summary(verbose=True)
 
         Parameters
         ----------
         scans : int or 2-tuple
-            The scan(s) to use. A 2-tuple represents (beginning, ending) scans. Default: show all scans
-
+            The scan(s) to use. A 2-tuple represents (beginning, ending) scans.
+            Default: show all scans
         verbose: bool
             If True, list every record, otherwise return a compact summary
+            Default: False
         show_index: bool
-            If True, show the DataFrame index column.  Default: False
+            If True, show the DataFrame index column.
+            Default: False
 
         Returns
         -------
