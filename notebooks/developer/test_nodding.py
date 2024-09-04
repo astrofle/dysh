@@ -16,6 +16,7 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 from dysh.fits.sdfitsload import SDFITSLoad
 from dysh.fits.gbtfitsload import GBTFITSLoad
+from dysh.fits.gbt20mfitsload import 
 import dysh.util as util
 from dysh.util.files import dysh_data
 from dysh.util.selection import Selection
@@ -44,6 +45,8 @@ sdf1.summary()
 sdf1.summary(verbose=True)
 sdf1._index[k]
 
+#p1 = sdf1.gettp
+
 #%%
 p1 = sdf1.gettp()
 sp0=p1[0].finalspectrum()
@@ -70,7 +73,8 @@ p2 = sdf1.getps()
 
 
 # cd /home/teuben/GBT/dysh_data/acceptance_testing/data/
-cd /home/teuben/GBT/dysh/notebooks/developer
+# cd /home/teuben/GBT/dysh/notebooks/developer
+cd /home/teuben/GBT/dysh_data/nodding
 
 
 #%% EXAMPLE-0  fs/nod
@@ -109,7 +113,7 @@ f2 = 'junk62/junk625.fits'   # beam 3, the sig in scan 62
 sdf2 = GBTFITSLoad(f2)
 sdf2.summary()
 sdf2.summary(verbose=True)
-sdf2._index[k]
+sdf2._index[k]                     # 1488
 
 f3 = 'junk62/junk626.fits'   # beam 7, the sig in scan 63
 sdf3 = GBTFITSLoad(f3)
@@ -164,7 +168,7 @@ sdf2890 = GBTFITSLoad('junk2890.fits')
 sdf2890.summary()
 sdf2890._index[k]    # 24 rows
 
-#%% EXAMPLE-2 tp
+#%% EXAMPLE-2 tp (deprecated)
 
 f2 = dysh_data(accept='TREG_050627/TREG_050627.raw.acs/TREG_050627.raw.acs.fits')
 sdf=GBTFITSLoad(f2)
@@ -177,7 +181,7 @@ sdf182.summary()
 sdf182._index[k]   # 128 rows
 
 # data[beam=2][scan=2][if=2][time=4][pol=2][cal=2]
-
+# deprecarted, don't use
 
 #%% EXAMPLE-3 tp_nocal
 
@@ -215,7 +219,7 @@ sdf571.summary()
 sdf571._index[k]   # 240 rows
 # data[int=30,30][pol=2][cal=2] 
 
-#%% EXAMPLE-5  tp
+#%% EXAMPLE-5  tp (deprecated)
 
 f5 = dysh_data(accept='TSCAL_19Nov2015/TSCAL_19Nov2015.raw.acs/TSCAL_19Nov2015.raw.acs.fits')
 sdf=GBTFITSLoad(f5)
@@ -226,6 +230,8 @@ sdf._index[k]    # 64 rows
 # data[scan=1][beam=2][if=2][time=4][pol=2][cal=2]
 
 # NOTE: this data incomplete? only has procseqn=1
+
+# deprecated, don't use it
 
 #%% EXAMPLE-6  tp
 
@@ -259,4 +265,39 @@ sdf361._index[k]  # 128, beam 7
 
 #   data   [ scan=2] [int=16] [pol=2] [cal=2]
 
+#%% EXAMPLE-8
  
+f8 = dysh_data(accept="AGBT19A_340_07/AGBT19A_340_07.raw.vegas")
+sdf = GBTFITSLoad(f8)
+# 8 files;   4IF 2PL 6-INT 2FEED
+sdf.summary()
+
+
+sdf430= GBTFITSLoad('junk430.fits')
+sdf430.summary()
+
+
+#%% EXAMPLE-9
+
+f9 = dysh_data(accept="AGBT12A_076_05/AGBT12A_076_05.raw.acs")
+sdf = GBTFITSLoad(f9)
+# 1 file
+sdf.summary()
+# 4-IF 2-POL 12-INT 2-FEED
+
+sdf.write('junk12.fits', scan=[12,13], ifnum=0, plnum=0, overwrite=True)   
+
+sdf12= GBTFITSLoad('junk12.fits')
+sdf12.summary()
+sdf12._index[k]     # 96/    768 rows    [scan=2][if=4] [int=12] [pol=2] [cal=2]
+
+# .timeaverage()
+p1a = sdf12.gettp(scan=12,fdnum=0)[0].timeaverage()  # 24 rows
+p1b = sdf12.gettp(scan=12,fdnum=1)[0].timeaverage() 
+p2a = sdf12.gettp(scan=13,fdnum=1)[0].timeaverage()  # 24 rows
+p2b = sdf12.gettp(scan=13,fdnum=0)[0].timeaverage()
+
+t1 = (p1a-p1b)/p1b
+t2 = (p2a-p2b)/p2b
+
+
