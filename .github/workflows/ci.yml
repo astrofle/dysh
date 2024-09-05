@@ -73,7 +73,7 @@ jobs:
           merge-multiple: true
       - name: Combine coverage
         run: |
-          coverage combine cov-dat/
+          coverage combine /home/runner/work/dysh/dysh/cov-dat/
           coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
