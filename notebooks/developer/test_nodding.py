@@ -16,7 +16,6 @@ from astropy.io import fits
 import matplotlib.pyplot as plt
 from dysh.fits.sdfitsload import SDFITSLoad
 from dysh.fits.gbtfitsload import GBTFITSLoad
-from dysh.fits.gbt20mfitsload import 
 import dysh.util as util
 from dysh.util.files import dysh_data
 from dysh.util.selection import Selection
@@ -48,13 +47,8 @@ sdf1._index[k]
 #p1 = sdf1.gettp
 
 #%%
-p1 = sdf1.gettp()
-sp0=p1[0].finalspectrum()
-sp1=p1[1].finalspectrum()
-print(sp0,sp1)
-print("why are the finalspectrum's None")
 
-#%%
+p1 = sdf1.gettp()
 sp0 = p1[0].timeaverage()
 sp1 = p1[1].timeaverage()
 a = (sp0-sp1)/sp0
@@ -76,7 +70,6 @@ p2 = sdf1.getps()
 # cd /home/teuben/GBT/dysh/notebooks/developer
 cd /home/teuben/GBT/dysh_data/nodding
 
-
 #%% EXAMPLE-0  fs/nod
 
 #  example from
@@ -88,9 +81,9 @@ cd /home/teuben/GBT/dysh_data/nodding
 
 # this is a huge file, we preload the minimum number of scans
 
-f2 = dysh_data(example="nod-KFPA/data/TGBT22A_503_02.raw.vegas")
-sdf2 = GBTFITSLoad(f2)
-sdf2.summary()
+f0 = dysh_data(example="nod-KFPA/data/TGBT22A_503_02.raw.vegas")
+sdf0 = GBTFITSLoad(f0)
+sdf0.summary()
 
 # Loaded 7 FITS files
 # CPU times: user 17.9 s, sys: 5.54 s, total: 23.4 s
@@ -104,56 +97,42 @@ sdf2.summary()
 # 3     63   W3_1    -40.0    Nod         2  23.959156  23.694495    6     2    31      7  324.367171  38.285767
 
 
-sdf2.write('junk62.fits',scan=[62,63])
-
-#%%
-
-
-f2 = 'junk62/junk625.fits'   # beam 3, the sig in scan 62
-sdf2 = GBTFITSLoad(f2)
-sdf2.summary()
-sdf2.summary(verbose=True)
-sdf2._index[k]                     # 1488
-
-f3 = 'junk62/junk626.fits'   # beam 7, the sig in scan 63
-sdf3 = GBTFITSLoad(f3)
-sdf3.summary()
-sdf3.summary(verbose=True)
-sdf3._index[k]
+# we know the two nodding beams are 2 and 6 in scans 62 and 63
+sdf0.write('junk62/junk62.fits',scan=[62,63],fdnum=[2,6],overwrite=True)
+#  hmm,  summary on this claimed 7 beams, even though two were written
 
 
-p62 = sdf2.gettp(scan=62, ifnum=0, plnum=0)[0]
-p63 = sdf2.gettp(scan=63, ifnum=0, plnum=0)[0]
+# IF=6 POL=2 INT=31 FEED=2 SCAN=2
 
-#%%
-
-f2 = 'junk62.fits'    # all 7 beams
-sdf2 = GBTFITSLoad(f2)
-sdf2.summary()
-for b in range(7):
-    print(sdf2.gettp(scan=62, ifnum=0, plnum=0, hdu=b+1)[0]._index[k][:1])
-
-
-for b in range(7):
-    print(GBTFITSLoad(f'junk62{b}.fits').gettp(scan=62, ifnum=0, plnum=0)[0]._index[k][:1])
 
 # beams:   2, 4, 5, 6, 1, 3, 7
 # FEED  SRFEED  FEEDXOFF  FEEDEOFF
-#    3       0       0.0       0.0  junk626 
-#    7       0  0.045644       0.0  junk625  
+#    3       0       0.0       0.0
+#    7       0  0.045644       0.0    
 #    1       0  0.022822 -0.013178    
 #    6       0  0.045644 -0.026356 
 #    5       0  0.022822 -0.039533 
 #    4       0       0.0 -0.026356 
-#    2       0  0.022822  0.013178  junk620
+#    2       0  0.022822  0.013178  
 
 
 
 #%%
-#     now with the mutifile trick
-sdf2 = GBTFITSLoad('junk62')
-sdf2.summary()
-sdf2._index[k]    # 10416 rows
+#     now with the multifile trick
+sdf62 = GBTFITSLoad('junk62')
+sdf62.summary()
+sdf62._index[k]    # 2975 for 2 beams
+
+p1a = sdf62.gettp(scan=62, fdnum=2, plnum=0)[0].timeaverage().smooth('box',5)
+p1b = sdf62.gettp(scan=63, fdnum=2, plnum=0)[0].timeaverage().smooth('box',5)
+t1 = (p1a-p1b)/p1b
+p2a = sdf62.gettp(scan=63, fdnum=6, plnum=0)[0].timeaverage().smooth('box',5)
+p2b = sdf62.gettp(scan=62, fdnum=6, plnum=0)[0].timeaverage().smooth('box',5)
+t2 = (p2a-p2b)/p2b
+
+t = (t1+t2)/2
+ts = t.smooth('box',10)
+ts.plot(xaxis_unit="km/s", xmin=440, xmax=530)
     
 #%% EXAMPLE-1   tp_nocal
 
@@ -292,12 +271,14 @@ sdf12.summary()
 sdf12._index[k]     # 96/    768 rows    [scan=2][if=4] [int=12] [pol=2] [cal=2]
 
 # .timeaverage()
-p1a = sdf12.gettp(scan=12,fdnum=0)[0].timeaverage()  # 24 rows
-p1b = sdf12.gettp(scan=12,fdnum=1)[0].timeaverage() 
-p2a = sdf12.gettp(scan=13,fdnum=1)[0].timeaverage()  # 24 rows
-p2b = sdf12.gettp(scan=13,fdnum=0)[0].timeaverage()
-
+p1a = sdf12.gettp(scan=12,fdnum=1)[0].timeaverage()  # 24 rows
+p1b = sdf12.gettp(scan=13,fdnum=1)[0].timeaverage() 
 t1 = (p1a-p1b)/p1b
+
+p2a = sdf12.gettp(scan=13,fdnum=0)[0].timeaverage()  # 24 rows
+p2b = sdf12.gettp(scan=12,fdnum=0)[0].timeaverage()
 t2 = (p2a-p2b)/p2b
 
-
+t = (t1+t2)/2
+ts = t.smooth('box',10)
+ts.plot(xaxis_unit="km/s")  # xmin=440, xmax=530)
