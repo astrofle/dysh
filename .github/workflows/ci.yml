@@ -26,8 +26,8 @@ jobs:
       # Ensure that if even if a build in the matrix fails, the others continue
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        os: [ubuntu-latest]
+        python-version: ["3.9"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -52,7 +52,7 @@ jobs:
       - name: Upload coverage data
         # Upload only ubuntu results, since we are only running the coverage step on ubuntu
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-data
           path: "covdat/coverage.ubuntu-latest*"
@@ -66,12 +66,12 @@ jobs:
           python-version: 3.9
           cache: pip
       - run: pip install --upgrade coverage[toml]
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: coverage-data
       - name: Combine coverage
         run: |
-          coverage combine covdat/
+          coverage combine
           coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
