@@ -68,7 +68,7 @@ jobs:
       - run: pip install --upgrade coverage[toml]
       - uses: actions/download-artifact@v4
         with:
-          pattern: coverage-data-*
+          pattern: coverage.*
           path: cov-dat
           merge-multiple: true
       - run: ls -R cov-dat
