@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9"]
+        python-version: ["3.9", "3.10"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -52,7 +52,7 @@ jobs:
       - name: Upload coverage data
         # Upload only ubuntu results, since we are only running the coverage step on ubuntu
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: coverage-data
           path: "coverage.ubuntu-latest*"
@@ -66,7 +66,7 @@ jobs:
           python-version: 3.9
           cache: pip
       - run: pip install --upgrade coverage[toml]
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v3
         with:
           name: coverage-data
       - name: Combine coverage
