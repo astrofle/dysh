@@ -71,7 +71,7 @@ jobs:
           name: coverage-data
       - name: Combine coverage
         run: |
-          coverage combine
+          coverage combine coverage/
           coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
