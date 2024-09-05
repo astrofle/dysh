@@ -54,7 +54,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-data-${{ matrix.os }}-${{ matrix.python-version }}
+          name: coverage.${{ matrix.os }}.${{ matrix.python-version }}
           path: "coverage.ubuntu-latest*"
   coverage:
     needs: tests
@@ -69,11 +69,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: coverage-data-*
-          path: cov-dat/
+          path: cov-dat
           merge-multiple: true
+      - run: ls -R cov-dat
       - name: Combine coverage
         run: |
-          coverage combine /home/runner/work/dysh/dysh/cov-dat/
+          coverage combine /home/runner/work/dysh/dysh/cov-dat
           coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
