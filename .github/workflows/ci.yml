@@ -52,7 +52,7 @@ jobs:
       - name: Upload coverage data
         # Upload only ubuntu results, since we are only running the coverage step on ubuntu
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-data
           path: "coverage.ubuntu-latest*"
@@ -66,12 +66,13 @@ jobs:
           python-version: 3.9
           cache: pip
       - run: pip install --upgrade coverage[toml]
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: coverage-data
+          path: cov-dat/
       - name: Combine coverage
         run: |
-          coverage combine coverage-data/
+          coverage combine cov-dat/
           coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
@@ -80,7 +81,7 @@ jobs:
           # Report again and fail if under 100%.
           # coverage report --fail-under=100
       - name: Upload HTML report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: html-report
           path: htmlcov
