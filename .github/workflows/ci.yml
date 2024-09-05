@@ -48,14 +48,14 @@ jobs:
       - name: Test with pytest
         run: |
           # Write coverage data files, namespaced using matrix info
-          coverage run --data-file="covdat/coverage.${{ matrix.os }}.${{ matrix.python-version }}" -m pytest src/dysh/fits/tests
+          coverage run --data-file="coverage.${{ matrix.os }}.${{ matrix.python-version }}" -m pytest src/dysh/fits/tests
       - name: Upload coverage data
         # Upload only ubuntu results, since we are only running the coverage step on ubuntu
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-data
-          path: "covdat/coverage.ubuntu-latest*"
+          path: "coverage.ubuntu-latest*"
   coverage:
     needs: tests
     runs-on: ubuntu-latest
