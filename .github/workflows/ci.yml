@@ -74,7 +74,7 @@ jobs:
       - run: ls -R cov-dat
       - name: Combine coverage
         run: |
-          coverage combine /home/runner/work/dysh/dysh/cov-dat
+          coverage combine cov-dat/coverage.*
           coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
